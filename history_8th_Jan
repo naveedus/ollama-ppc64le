@@ -1,0 +1,1000 @@
+ls -lhrt
+cd ..
+ls
+curl -fsSL https://ollama.com/install.sh 
+rm -rf ollama
+git clone https://github.com/ollama/ollama.git
+cd ollama
+git fetch origin pull/6837/head:pr-branch
+git checkout 3f9062a3d7d5dfe9ffec5ff09e0530fa4f891dd6
+git format-patch -1 3f9062a3d7d5dfe9ffec5ff09e0530fa4f891dd6
+git log
+cat 0001-Add-support-for-the-ppc64le-architecture.patch 
+make -j 50
+pwd
+ls
+pwd
+cat README.md 
+curl -fsSL https://ollama.com/install.sh | sh
+ls
+ls ../ollama_main/
+git apply 0001-Add-support-for-the-ppc64le-architecture.patch
+cd /tmp/
+git clong git@github.com:ollama/ollama.git
+git clongegit@github.com:ollama/ollama.git
+git cloe git@github.com:ollama/ollama.git
+git clone git@github.com:ollama/ollama.git
+cd ollama/
+ls
+ls llm/
+pwd
+cd ..
+rm -rf ollama/
+git clone https://github.com/ollama/ollama.git
+cd ollama
+cd oll
+cd olla
+pwd
+git log
+git log --oneline
+clear
+cd ..
+rm -rf ollama/
+cd
+rm -rf ollama
+git clone https://github.com/mkumatag/ollama.git
+cd ollama
+git fetch origin ppc64le_support
+git checkout ppc64le_support
+git branch
+cat llm/llm.go 
+ls
+cd scripts/
+ls
+cat build.sh 
+cat build_linux.sh 
+ls
+nvidia-smi
+ls
+./build.sh
+bash -x ./build.sh 
+ls
+cat env.sh 
+pwd
+cd 
+mv ollama ollama_mkumatag
+git clone https://github.com/ALutz273/ollama-ppc64le.git
+cd ollama
+ls
+cd ollama-ppc64le/
+ls
+cd server/
+ls
+cd ..
+ls
+cd cmd/
+ls
+cd ..
+ls
+cat README.md 
+ls
+cd app
+ls
+cat README.md 
+pwd 
+cd ..
+pwd
+ls
+cd scripts/
+ls
+./build_linux.sh 
+ls -lhrt
+cd dist/
+ls
+cd ..
+ls
+cd ..
+find . 
+cat docs/README.md 
+cat docs/development.md 
+yum install cmake
+go generate ./...
+cat docs/development.md 
+ls
+go build .
+ls
+ip a
+nvidia-smi 
+ollama run granite3.1-dense
+./ollama pull granite3.1-dense
+./ollama run granite3.1-dense
+cd ..
+cd ollama_main/
+ls
+cat docs/development.md 
+history 
+go generate ./...
+ls
+history 
+cd ..
+ls
+pwd
+cd ollama_m
+cd ollama_main/
+ls
+./ollama pull granite3.1-dense
+find . 
+find .  | grep ollama
+cd ..
+ls -lhrt
+cd ollama-ppc64le/
+find .  | grep ollama
+./ollama pull granite3.1-dense
+ip a
+./ollama pull granite3.1-dense
+./ollama run granite3.1-dense
+strace ./ollama run granite3.1-dense
+ping sgn-vpn.pok.stglabs.ibm.com
+cd ..
+pwd
+git clone https://github.com/ggerganov/llama.cpp.git
+cd llama.cpp/
+ls
+cmake -B build
+cmake --build build --config Release
+cmake -B build -DGGML_CUDA=ON
+nvidia-smi 
+ls CUDA_HOME
+echo $CUDA_HOME
+which cuda
+ls /usr/local/cuda
+ls /usr/local/cuda-12.4/
+export CUDA_HOME=/usr/local/cuda-12.4/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64
+export PATH=$PATH:$CUDA_HOME/bin
+cmake -B build -DGGML_CUDA=ON
+sudo yum install gcc-toolset-13
+wget https://repo.anaconda.com/archive/Anaconda3-2023.09-0-Linux-ppc64le.sh
+yum install wget -y -q
+wget https://repo.anaconda.com/archive/Anaconda3-2023.09-0-Linux-ppc64le.sh
+source /opt/rh/gcc-toolset-13/enable 
+bash Anaconda3-2023.09-0-Linux-ppc64le.sh
+conda config --set auto_activate_base false
+/root/anaconda3/bin/conda config --set auto_activate_base false
+pwd
+/root/anaconda3/bin/conda init
+cat /root/.bashrc 
+exit
+cd ollama-ppc64le/
+./ollama serve
+cd 
+mkdir vllm
+cd vllm/
+cd ..
+yum search python
+yum install python3.12 -y
+python3
+python3 -m venv vllm/
+cd vllm/
+ls
+cd ..
+ls
+source vllm/bin/activate
+cd vllm/
+# Install vLLM from pip:
+pip install vllm
+pip install --upgrade pip
+pip install vllm
+lspci -nn
+lspci -nn | grep -i nvidia
+pip search torch
+pip3.12 search torch
+pip3.12 search torch==2.5.1
+pip3.12 install torch==2.5.1
+pip show torch
+pip list
+pip install torch
+pip3.12 install torch==2.5.1 -f https://download.pytorch.org/whl/torch_stable.html
+deactivate
+cd..
+cd ..
+source vllm/bin/activate
+conda create -n vllm python=3.12 -y
+deactivate
+conda create -n vllm python=3.12 -y
+conda activate vllm  
+pip install vllm
+pip install torch==2.5.1
+pip lista
+pip list
+pip search torch
+python3 -m pip --version
+python3 -m pip install torch==2.5.1
+deactivate
+exit
+source /root/anaconda3/bin/activate
+pip list
+exit
+dig 9.40.192.26 -x @9.0.0.1
+vim /etc/hostname 
+hostname
+cat /etc/hostname 
+hostname ltc-wspoon21.aus.stglabs.ibm.com
+lsmcode
+lspci -nnn | grep -i nvidia
+free -g 
+tail /proc/cpuinfo 
+tail /proc/cpuinfo -n 10
+tail /proc/cpuinfo -n 11
+free -g 
+lsvpd
+wget https://go.dev/dl/go1.23.4.src.tar.gz
+mkdir go
+ls -lhrt
+cd go/
+ls
+cd ..
+ls
+mkdir golang
+cd golang/
+tar -xvf ../go1.23.4.src.tar.gz 
+cd go/
+ls
+cat README.md 
+ls
+ls /usr/local/go
+cd 
+rm -rf /usr/local/go && tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz
+rm -rf /usr/local/go && tar -C /usr/local -xzf go1.23.4.src.tar.gz go/
+cd /usr/local/go/
+ls
+nvidia-smi
+nvtop
+pwd
+cd 
+git clone https://github.com/Syllo/nvtop.git
+cd nvtop/
+ls
+cat README.markdown 
+cd 
+mkdir -p nvtop/build && cd nvtop/build
+cmake .. -DNVIDIA_SUPPORT=ON -DAMDGPU_SUPPORT=ON -DINTEL_SUPPORT=ON
+make
+cmake .. -DNVIDIA_SUPPORT=ON -DAMDGPU_SUPPORT=ON 
+yum search libncurses
+yum search nvtop
+yum install nvtop
+nvtop
+date
+pwd
+cd /usr/local/go
+ls
+cd go-linux-ppc64le-bootstrap/
+ls
+cat README.md 
+;s
+ls
+cd bin/
+ls
+cp ../../src/hello.go . 
+./go hello.go 
+./go run hello.go 
+which gofmt 
+which go 
+pwd
+export PATH=$PATH:/usr/local/go/go-linux-ppc64le-bootstrap/bin
+which go 
+rpm -qf /usr/bin/go
+rpm -e golang-bin-1.21.7-2.module+el8.10.0+21638+b01be198.ppc64le
+yum remove golang-bin-1.21.7-2.module+el8.10.0+21638+b01be198.ppc64le
+which go 
+go version 
+which go 
+/usr/local/go/go-linux-ppc64le-bootstrap/bin/go run hello.go 
+/usr/local/go/go-linux-ppc64le-bootstrap/bin/go --version
+/usr/local/go/go-linux-ppc64le-bootstrap/bin/go -v
+/usr/local/go/go-linux-ppc64le-bootstrap/bin/go -V
+/usr/local/go/go-linux-ppc64le-bootstrap/bin/go version
+pwd
+history | grep -i git
+git clone https://github.com/ollama/ollama.git
+cd ollama/
+ls
+curl -fsSL https://ollama.com/install.sh | sh
+sl /usr/lib/ollama
+ls /usr/lib/ollama
+cd ..
+ls
+go version
+cd ..
+ls
+cd ..
+ls
+cd ..
+ls
+mv go go_old
+wget https://go.dev/dl/go1.24rc1.linux-ppc64le.tar.gz . 
+tar xvf go1.24rc1.linux-ppc64le.tar.gz
+ls
+cd go
+ls
+cd bin/
+ls
+go version 
+echo $PATH
+pwd
+history | grep echo
+history | grep PATH
+export PATH=$PATH:/usr/local/go/bin/
+go version
+which go 
+./go update
+ls
+pwd
+cd ..
+ls
+history 
+pwd
+cd go
+ls
+cd src/
+ls
+./all.bash
+pwd
+cd ..
+ls
+cd bin/
+ls
+pwd
+echo $GOROOT
+update-alternatives --set go /usr/local/go/bin/go
+pwd
+export $GOROOT=/usr/local/go/bin
+export GOROOT=/usr/local/go/bin
+export GOROOT_BOOTSTRAP=$GOROOT
+cd ../src/
+ls
+./all.bash
+export GOROOT=/usr/local/go/
+./all.bash
+export GOROOT_BOOTSTRAP=$GOROOT
+./all.bash
+ls
+cd ..
+ls
+yum install go
+pwd
+ls
+cd src/
+ls
+./all.bash 
+export GOROOT_BOOTSTRAP=
+./all.bash 
+which go
+export GOROOT=/usr/bin/
+export GOROOT_BOOTSTRAP=$GOROOT
+./all.bash 
+pwd
+reboot 
+who
+uptime
+ip a
+nmtui
+cat /etc/hostname 
+ip a
+cd /usr/local/go
+ls
+cd src/
+ls
+./all.bash
+which go
+go 
+vim hello.go
+go hello.go 
+which go
+echo $GOTOOLCHAIN
+local go env 
+GOTOOLCHAIN=local go env
+vim bootstrap.bash 
+GOOS=linux GOARCH=ppc64le ./bootstrap.bash
+ls -lhrt
+cd ..
+ls
+cp /usr/local/go-linux-ppc64le-bootstrap.tbz . 
+tar xvf go-linux-ppc64le-bootstrap.tbz 
+pwd
+cd /usr/local/go/src
+ls
+./all.bash 
+echo $GOROOT
+rpm -qa | grep go 
+rpm -ql golang-1.21.7-2.module+el8.10.0+21638+b01be198.ppc64le | grep -i version 
+file /usr/lib/golang/VERSION
+cat /usr/lib/golang/VERSION
+rpm -ql golang-bin-1.21.7-2.module+el8.10.0+21638+b01be198.ppc64le | grep -i version 
+export GOROOT=/usr/lib/golang/
+./all.bash 
+find ../| grep -i version 
+cat ../src/go/version
+cat go/version/
+cat go/version/version
+cat go/version/version.go 
+ls
+./clean.bash 
+./all.bash 
+ls /usr/lib/golang/src/go/
+cd ..
+ls
+pwd
+cd ..
+ls
+rm -rf go 
+rm -rf go1.24rc1.linux-ppc64le.tar.gz
+cd 
+ls
+wget https://go.dev/dl/go1.22.1.linux-ppc64le.tar.gz
+tar xvf go1.22.1.linux-ppc64le.tar.gz 
+cd go
+ls
+cd src/
+ls
+./all.bash 
+cd ..
+ls
+cd bin/
+ls
+./go version
+cd ..
+ls
+go tool dist
+ls
+make
+cd doc/
+ls
+cd ..
+ls
+cd api/
+ls
+cat README 
+cd ..
+ls
+cd pkg/
+ls
+cd tool/
+ls
+cd linux_ppc64le/
+ls
+find *
+file *
+cd ..
+ls
+cd ..
+ls
+cd ..
+ls
+file go.env 
+cat go.env 
+cd test/
+ls
+cd .
+cd ..
+ls
+cat VERSION 
+cd src/
+ls
+make
+./buildall.bash 
+ls ../bin/
+../bin/go version
+echo $PATH
+export PATH=$PATH:/root/go/bin
+history | grep altern
+update-alternatives --set go /root/go/bin/go
+go
+which go
+GOTOOLCHAIN=local go env
+cd ..
+ls
+pwd
+cd src/
+ls
+cd ..
+ls
+find . | grep -i linux_ppc64le
+cd pkg/
+ls
+cd tool/
+ls
+cd linux_ppc64le/i
+cd linux_ppc64le/
+ls
+pwd
+GOTOOLCHAIN=local go env
+pwd
+ls /usr/lib/golang/pkg/tool/linux_ppc64le
+ls /root/go/pkg/tool/linux_ppc64le
+export GOTOOLDIR='/root/go/pkg/tool/linux_ppc64le'
+GOTOOLCHAIN=local go env
+export GOTOOLDIR=/root/go/pkg/tool/linux_ppc64le
+GOTOOLCHAIN=local go env
+echo $GOTOOLCHAIN
+go env -u GOTOOLCHAIN
+export GOTOOLCHAIN=auto
+go env -u GOTOOLCHAIN
+go
+go version 
+GOTOOLCHAIN=local go env
+pwd
+GOTOOLCHAIN=/root/go/bin/ go env
+GOTOOLCHAIN=/root/go/bin/go env
+GOTOOLCHAIN=auto go env
+pwd
+cd ..
+ls
+cd ..
+ls
+cd ..
+ls
+cd bin/
+ls
+./go version 
+go version 
+echo $PATH
+pwd
+cd ..
+ls
+cd ..
+ls
+cd ollama
+ls
+git clone https://github.com/ollama/ollama.git
+cd ollama
+ls
+which go 
+yum remove go 
+which go 
+go version 
+reboot 
+which go 
+export PATH=$PATH:/root/go/bin
+which go 
+cd ollama
+tail /proc/cpuinfo -n 20
+make -j 30
+cd llm
+ls
+cd ..
+ls
+cd readline/
+ls
+vim term_linux.go 
+cd ..
+make -j 30
+make clean all 
+make clean all -j 50
+ls
+cd ..
+ls
+cd ollama-ppc64le/
+ls
+./ollama list
+./ollama run granite3.1-dense:latest
+./ollama pull llama3
+./ollama run llama3
+./ollama run llama3 --verbose "what is blackhole"
+ip a
+./ollama run llama3 --verbose "what is blackhole"
+./ollama pull granite3-dense:8b
+./ollama run granite3-dense:8b --verbose "what is blackhole"
+ollama run llama3.3 --verbose "what is blackhole"
+./ollama run llama3.3 --verbose "what is blackhole"
+df -h . 
+./ollama list
+./ollama --help
+./ollama rm granite3-dense:8b  granite3.1-dense:latest
+df -h . 
+./ollama rm llama3:latest
+df -h . 
+./ollama rm granite3-dense:8b  granite3.1-dense:latest
+./ollama run llama3.3 --verbose "what is blackhole"
+./ollama list
+./ollama rm llama3.3:latest
+df -h 
+df -h .
+cd 
+du -sh . 
+du -sh *
+du -sh /root/
+du -sh /root/*
+mv anaconda3 /home/
+df -h 
+df -h .
+netstat -tulpan
+cd /home/
+git clone https://github.com/containers/podman.git
+cd podman
+yum install selinux-policy-devel libseccomp-devel device-mapper-persistent-data -y
+./autogen.sh
+ls
+make
+make -j 50
+yum search podman
+yum install podman.ppc64le
+docker
+yum search docker
+podman init
+docker pull and start Qdrant vector db
+docker pull qdrant/qdrant
+docker run -p 6333:6333 -p 6334:6334     -v $(pwd)/qdrant_storage:/qdrant/storage:z     qdrant/qdrant
+yum install podman-docker.noarch -y
+docker
+docker init
+docker run -p 6333:6333 -p 6334:6334     -v $(pwd)/qdrant_storage:/qdrant/storage:z     qdrant/qdrant
+docker pull qdrant/qdrant
+docker pull thanosio/thanos-linux-ppc64le
+docker pull almalinux/ppc64le
+docker images 
+docker run docker.io/almalinux/ppc64le -t bash
+docker run docker.io/almalinux/ppc64le 
+docker ps
+docker run -i -t  docker.io/almalinux/ppc64le /bin/bash
+pwd
+cd 
+cat .ssh/id_rsa.pub 
+ip a
+ls
+git clone git@github.ibm.com:naveedaus/ai-rag-pdf.git
+cd ai-rag-pdf/
+ls
+python3
+cat README.md 
+ls
+python3 -m venv python3.12_venv
+source python3.12_venv/bin/activate
+pip3.12 install -r requirements.txt
+pip3.12 upgrade
+pip3.12 --help
+python3 -m pip3.12 install --upgrade pip3.12
+python3 -m pip install --upgrade pip
+pip3 install -r requirements.txt
+vim requirements.txt 
+cat 
+pip3 install -r requirements.txt
+cat /tmp/pip-install-u3tl9btu/numpy_30ee6364c1c54351980e8899300cfa01/.mesonpy-abqzooiw/meson-logs/meson-log.txt
+ls /tmp/pip-install-u3tl9btu/numpy_30ee6364c1c54351980e8899300cfa01/vendored-meson/meson/meson.py 
+cd python3.12_venv/
+ls
+cd bin/
+ls
+ls /tmp/
+cd ..
+ls
+find . | grep tmp
+pip install --upgrade pip
+yum install python3.12-devel
+pip3 install -r requirements.txt
+cd ..
+pip3 install -r requirements.txt
+deactivate
+python3 -m venv python3.12_venv
+rm -rf python3.12_venv
+pkg-config --modversion python-3.12
+python3 -m venv python3.12_venv
+source python3.12_venv/bin/activate
+pip3 install -r requirements.txt
+CC=clang CXX=clang++ pip install numpy
+CC=clang CXX=clang++ pip3 install numpy
+pip install --upgrade pip
+CC=clang CXX=clang++ pip3 install numpy
+dnf module enable gcc-toolset-10 -y
+yum module list gcc
+yum module list 
+yum search gcc 
+yum install gcc-toolset-10 -y
+yum install gcc-toolset-10-gcc-c++
+source /opt/rh/gcc-toolset-9/enable
+gcc --version
+pip3 install -r requirements.txt
+yum install python3-distutils
+yum search distutils
+yum install  -y
+yum install  python3-distutils-extra.noarch -y
+pip3 install -r requirements.txt
+deactivate
+rm -rf python3.12_venv
+python3 -m venv python3.12_venv
+source python3.12_venv/bin/activate
+pip3 install -r requirements.txt
+ pip install --upgrade pip
+pip install --upgrade setuptools wheel
+pip install -r requirements.txt
+sudo yum groupinstall "Development Tools"
+pip install --upgrade setuptools
+deactivate 
+python3
+gcc --version
+source /opt/rh/gcc-toolset-9/enable
+gcc --version
+curl https://pyenv.run | bash
+nmap localhost
+netstat -tulpan
+watch nvidia-smi
+du -sh /home/
+top
+pstree -a
+watch nvidia-smi
+netstat -tulpan
+watch nvidia-smi
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - bash)"
+eval "$(pyenv virtualenv-init -)"
+eval "$(pyenv init --path)"
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
+pyenv install 3.11
+yum install -y   bzip2-devel   ncurses-devel   libffi-devel   readline-devel   sqlite-devel   zlib-devel   tk-devel   gdbm-devel   nss-devel   openssl-devel   lzma-devel   yaml-devel
+yum install -y   bzip2-devel   ncurses-devel   libffi-devel   readline-devel   sqlite-devel   zlib-devel   tk-devel   gdbm-devel   nss-devel   openssl-devel   lzma-devel   yaml-devel
+python3.11 -m ensurepip 
+cd ai-rag-pdf/
+ls
+history |grep env
+python3.11 -m venv python3.11_env
+source python3.11_env/bin/activate
+source /opt/rh/gcc-toolset-9/enable
+pip3.11 install --upgrade setuptools
+pip install --upgrade pip
+pip3.11 install -r requirements.txt 
+gcc --version
+yum install python3-devel gcc-c++ pkg-config
+pip3.11 install -r requirements.txt 
+cat /tmp/pip-install-ctsznror/numpy_af136efb60f441239499bf3ff31d8eca/.mesonpy-ph0q_imm/meson-logs/meson-log.txt
+pip3.11 install meson
+pip3.11 install -r requirements.txt 
+pip3.11 install meson==1.5.2
+pip3.11 install -r requirements.txt 
+history | grep pkgconfig
+history | grep -i config
+pkg-config --modversion python-3.11
+yum install python3.11-dev
+which python3
+which python3.11
+pip install cython
+pip install numpy
+/tmp/pip-install-gpf8x9yw/numpy_9130849551a142f0b444ff07120f1990/.mesonpy-jqconzy9/meson-logs/meson-log.txt
+cat /tmp/pip-install-gpf8x9yw/numpy_9130849551a142f0b444ff07120f1990/.mesonpy-jqconzy9/meson-logs/meson-log.txt
+deactivate 
+source python3.12_venv/bin/activate
+gcc --version
+source /opt/rh/gcc-toolset-9/enable
+pip install --upgrade virtualenv
+pip install --upgrade pip
+pip list --outdated
+pip3.12 install --upgrade pip3.12
+python -m ensurepip --upgrade
+pip --version
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+python get-pip.py
+which python
+python
+python3
+yum remove python3.6.8
+deactivate
+yum remove python
+yum search python
+yum remove python36
+source python3.12_venv/bin/activate
+python
+source /opt/rh/gcc-toolset-9/enable
+pip3.12 install -r requirements.txt 
+pip install --upgrade pip setuptools wheel
+pip install opencv-python==4.6.0.66
+pip install --upgrade pkg_resources
+pip install --upgrade pip setuptools
+pip install wheel build
+pip install opencv-python==4.10.0.84
+yum install python3-opencv
+pip install opencv-python
+pip install opencv-python-headless
+cd python3.12_venv/
+git clone --recursive https://github.com/opencv/opencv-python.git
+df -h 
+cd ..
+ls
+rm -rf python3.11_env
+df -h . 
+du -sh python3.12_venv
+nvidia-smi 
+nvtop
+nvidia-smi 
+watch nvidia-smi 
+cd /home/
+du -sh . 
+lsscsi -
+du -sh . 
+du -s . 
+du -sh . 
+ip a
+ollama run llama3.1:70b --verbose "what is blackhole"
+du -sh . 
+cd 
+cd ollama-ppc64le/
+./ollama run llama3.1:70b --verbose "what is blackhole"
+./ollama list
+./ollama rm llama3.1:70b
+./ollama run llama3.1 
+c
+./ollama run llama3.1 --verbose "what is blackhole"
+./ollama run llama3 --verbose "what is blackhole"
+./ollama run llama3 --verbose "write a blog of 1000 lines explaining why IBM Power8 servers are better than Intel servers give examples where can IBM Power servers be used"
+./ollama run llama3 --verbose "write a blog of 10000 lines explaining why IBM Power8 servers are better than Intel servers give examples where can IBM Power servers be used"
+./ollama run llama3 --verbose "A bat and a ball cost £1.10 in"
+total. The bat costs £1.00
+more than the ball. How
+./ollama run llama3 --verbose "A bat and a ball cost £1.10 in total. The bat costs £1.00 more than the ball. How much does the ball cost?"
+./ollama run llama3 --verbose "A bat and a ball cost £1.10 in total. The bat costs £1.00 more than the ball. How much does the ball cost? try again "
+./ollama run llama3 --verbose "A bat and a ball cost £1.10 in total. The bat costs £1.00 more than the ball. How much does the ball cost? previous answer was not correct  "
+./ollama run llama3 --verbose "Write a short story set in a futuristic city where technology controls every aspect of life, but the main character discovers a hidden society living without modern tech. Incorporate themes of freedom and dependence"
+./ollama run llama3 --verbose "Story was good, did you like it?"
+./ollama run llama3 --verbose "Write a short story set in a futuristic city where technology controls every aspect of life, but the main character discovers a hidden society living without modern tech. Incorporate themes of freedom and dependence"
+./ollama run llama3 --verbose "Story was good, did you like it?"
+./ollama run llama3 --verbose "Explain the significance of the Rosetta Stone in understanding ancient Egyptian hieroglyphs."
+./ollama list
+df -h . 
+./ollama rm llama3.1:latest
+./ollama run llama3:70b --verbose "Explain the significance of the Rosetta Stone in understanding ancient Egyptian hieroglyphs."
+./ollama run llama3:70b --verbose "Plato’s Gorgias is a critique of rhetoric and sophistic oratory, where he makes the point that not only is it not a proper form of art, but the use of rhetoric and oratory can often be harmful and malicious. Can you write a dialogue by Plato where instead he criticizes the use of autoregressive language models? Can you compare the two outputs below as if you were a teacher? "
+./ollama run llama3:70b --verbose "Explain the difference between quantum physics and Newtonian physics. "
+./ollama run llama3:70b --verbose "how to install podman on ppc64le arch?"
+df -h . 
+./ollama list
+cd ..
+du -sh *
+mv go* /home/
+mv vllm /home/
+df -h . 
+cd ollama
+df -h . 
+source /opt/rh/gcc-toolset-9/enable
+gcc -version
+gcc version
+gcc --version
+make -j 50 
+cd ..
+cp /home/go/bin/go go
+mkdir go/bin
+mkdir go
+mkdir go1
+mkdir go1/bin
+rm -rf go
+rm -rf go1/
+du -sh /home/go
+cp -r /home/go .
+go
+cat $PATH
+export PATH=$PATH:/root/go/bin
+go
+cd ollama
+df -h 
+make -f 50 
+ls
+make -j 50
+yum search gcc
+yum install gcc-toolset-13 -y
+rpm -qa | grep -i toolset
+rpm -qa | grep -i toolset | grep 9
+history | grep toolset
+rpm -qa | grep -i toolset | grep 13
+source /opt/rh/gcc-toolset-13/enable 
+make -j 50
+ls -lhrt
+df -h . 
+pwd
+./ollama list
+./ollama rm llama3:latest
+ollama run granite3.1-dense --verbose "what is blackhole"
+pwd
+./ollama run granite3.1-dense --verbose "what is blackhole"
+df -h . 
+./ollama run llama3:70b   --verbose "what is blackhole"
+ip a
+netstat -tulpan
+cd ai-rag-pdf/
+ls
+source python3.12_venv/bin/activate
+vim requirements.txt 
+python
+pip install -r requirements.txt 
+cat requirements.txt 
+vim requirements.txt 
+pip install -r requirements.txt 
+vim requirements.txt 
+pip install -r requirements.txt 
+pip install torch==1.11.0
+pip install torch
+source /opt/rh/gcc-toolset-9/enable
+gcc version
+gcc 
+gcc version
+gcc --version
+go
+ssh -R 11434:localhost:11434 NAUS@10.231.200.210
+ip a
+who
+ip a
+ssh -R 11434:localhost:11434 NAUS@10.231.200.210
+df -h . 
+ls -hrt
+rm -rf ollama_mkumatag
+ssh -L 11434:localhost:11434 NAUS@10.231.200.210
+ssh -R 11434:localhost:11434 NAUS@10.231.200.210
+ssh -R 11434:127.0.0.1:11434 NAUS@10.231.200.210
+ssh -R 192.168.10.10:11434:127.0.0.1:11434 NAUS@10.231.200.210
+nvtop
+cat .ollama/history 
+nvtop
+uptime
+who
+ls 
+du -sh ollama
+cd ollama
+./ollama list
+./ollama 
+./ollama list
+./ollama rm llama2:70b
+./ollama rm llama:70b
+./ollama rm llama3:70b
+ollama run llama3.3 --verbose "what is blackhole?"
+./ollama run llama3.3 --verbose "what is blackhole?"
+ip a
+who
+netstat -tulpan
+ssh -R 11434:localhost:11434 NAUS@10.231.200.210
+ssh -R 11434:192.168.10.10:11434 NAUS@10.231.200.210
+ssh -R 11434:localhost:11434 NAUS@10.231.200.210
+ssh -R 11434:localhost:11434 NAUS@10.231.200.210
+ssh -R 192.168.10.10:11434:127.0.0.1:11434 NAUS@10.231.200.210
+ping 9.61.253.131
+ssh -R 11434:localhost:11434 NAUS@9.61.253.131
+ssh -R 192.168.10.10:11434:localhost:11434 NAUS@9.61.253.131
+ssh -R 11434:0.0.0.0:11434 NAUS@9.61.253.131
+ssh -R 11434:0.0.0.0:11434 NAUS@10.231.200.210
+ssh -R 0.0.0.0:11434:127.0.0.1:11434 NAUS@10.231.200.210
+cd ollama
+./ollama --version
+ip a
+uptime
+who
+ssh -R 0.0.0.0:11434:127.0.0.1:11434 NAUS@10.231.200.210
+ollama run granite3.1-moe:1b
+cd ollama
+./ollama run granite3.1-moe:1b
+df -h .
+cd /
+du -sh . 
+du -sh *
+cd  var/
+ls
+cd
+cd ollama
+./ollama rm granite3.1-moe:1b
+cd /usr/
+du -sh *
+cd local/
+du -sh *
+ls ~/.ollama/`
+ls ~/.ollama/
+cd
+ls .ollama/
+ls .ollama/models/
+ls .ollama/models/**/**
+df -h /home/
+mv .ollama /home/
+cd ollama
+./ollama list
+ollama run granite3.1-moe:1b
+./ollama run granite3.1-moe:1b
+nvtop
+top
+netstat -tan
+nvtop
