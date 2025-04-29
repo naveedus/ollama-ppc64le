@@ -11,9 +11,13 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
 
@@ -35,8 +39,10 @@ func (f Modelfile) String() string {
 	return sb.String()
 }
 
+var deprecatedParameters = []string{"penalize_newline"}
+
 // CreateRequest creates a new *api.CreateRequest from an existing Modelfile
-func (f Modelfile) CreateRequest() (*api.CreateRequest, error) {
+func (f Modelfile) CreateRequest(relativeDir string) (*api.CreateRequest, error) {
 	req := &api.CreateRequest{}
 
 	var messages []api.Message
@@ -46,7 +52,7 @@ func (f Modelfile) CreateRequest() (*api.CreateRequest, error) {
 	for _, c := range f.Commands {
 		switch c.Name {
 		case "model":
-			path, err := expandPath(c.Args)
+			path, err := expandPath(c.Args, relativeDir)
 			if err != nil {
 				return nil, err
 			}
@@ -59,9 +65,15 @@ func (f Modelfile) CreateRequest() (*api.CreateRequest, error) {
 				return nil, err
 			}
 
-			req.Files = digestMap
+			if req.Files == nil {
+				req.Files = digestMap
+			} else {
+				for k, v := range digestMap {
+					req.Files[k] = v
+				}
+			}
 		case "adapter":
-			path, err := expandPath(c.Args)
+			path, err := expandPath(c.Args, relativeDir)
 			if err != nil {
 				return nil, err
 			}
@@ -82,6 +94,11 @@ func (f Modelfile) CreateRequest() (*api.CreateRequest, error) {
 			role, msg, _ := strings.Cut(c.Args, ": ")
 			messages = append(messages, api.Message{Role: role, Content: msg})
 		default:
+			if slices.Contains(deprecatedParameters, c.Name) {
+				fmt.Printf("warning: parameter %s is deprecated\n", c.Name)
+				break
+			}
+
 			ps, err := api.FormatParams(map[string][]string{c.Name: {c.Args}})
 			if err != nil {
 				return nil, err
@@ -130,12 +147,25 @@ func fileDigestMap(path string) (map[string]string, error) {
 		files = []string{path}
 	}
 
+	var mu sync.Mutex
+	var g errgroup.Group
+	g.SetLimit(max(runtime.GOMAXPROCS(0)-1, 1))
 	for _, f := range files {
-		digest, err := digestForFile(f)
-		if err != nil {
-			return nil, err
-		}
-		fl[f] = digest
+		g.Go(func() error {
+			digest, err := digestForFile(f)
+			if err != nil {
+				return err
+			}
+
+			mu.Lock()
+			defer mu.Unlock()
+			fl[f] = digest
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
 	return fl, nil
@@ -197,15 +227,9 @@ func filesForModel(path string) ([]string, error) {
 	}
 
 	var files []string
-	if st, _ := glob(filepath.Join(path, "model*.safetensors"), "application/octet-stream"); len(st) > 0 {
+	if st, _ := glob(filepath.Join(path, "*.safetensors"), "application/octet-stream"); len(st) > 0 {
 		// safetensors files might be unresolved git lfs references; skip if they are
 		// covers model-x-of-y.safetensors, model.fp32-x-of-y.safetensors, model.safetensors
-		files = append(files, st...)
-	} else if st, _ := glob(filepath.Join(path, "adapters.safetensors"), "application/octet-stream"); len(st) > 0 {
-		// covers adapters.safetensors
-		files = append(files, st...)
-	} else if st, _ := glob(filepath.Join(path, "adapter_model.safetensors"), "application/octet-stream"); len(st) > 0 {
-		// covers adapter_model.safetensors
 		files = append(files, st...)
 	} else if pt, _ := glob(filepath.Join(path, "pytorch_model*.bin"), "application/zip"); len(pt) > 0 {
 		// pytorch files might also be unresolved git lfs references; skip if they are
@@ -555,8 +579,10 @@ func isValidCommand(cmd string) bool {
 	}
 }
 
-func expandPathImpl(path string, currentUserFunc func() (*user.User, error), lookupUserFunc func(string) (*user.User, error)) (string, error) {
-	if strings.HasPrefix(path, "~") {
+func expandPathImpl(path, relativeDir string, currentUserFunc func() (*user.User, error), lookupUserFunc func(string) (*user.User, error)) (string, error) {
+	if filepath.IsAbs(path) || strings.HasPrefix(path, "\\") || strings.HasPrefix(path, "/") {
+		return filepath.Abs(path)
+	} else if strings.HasPrefix(path, "~") {
 		var homeDir string
 
 		if path == "~" || strings.HasPrefix(path, "~/") {
@@ -583,11 +609,13 @@ func expandPathImpl(path string, currentUserFunc func() (*user.User, error), loo
 		}
 
 		path = filepath.Join(homeDir, path)
+	} else {
+		path = filepath.Join(relativeDir, path)
 	}
 
 	return filepath.Abs(path)
 }
 
-func expandPath(path string) (string, error) {
-	return expandPathImpl(path, user.Current, user.Lookup)
+func expandPath(path, relativeDir string) (string, error) {
+	return expandPathImpl(path, relativeDir, user.Current, user.Lookup)
 }
