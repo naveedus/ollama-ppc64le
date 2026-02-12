@@ -19,27 +19,27 @@ Complete guide for compiling and installing Ollama with CUDA GPU support on IBM 
 
 ### 1. Install CUDA Toolkit (if not already installed)
 
-Download and install CUDA 12.4 for ppc64le:
+Download and install CUDA 11.8 for ppc64le:
 
-**Download Link**: [CUDA 12.4.0 for RHEL 8 ppc64le](https://developer.nvidia.com/cuda-12-4-0-download-archive?target_os=Linux&target_arch=ppc64le&Distribution=RHEL&target_version=8&target_type=rpm_local)
+**Download Link**: [CUDA 11.8.0 for RHEL 8 ppc64le](https://developer.nvidia.com/cuda-11-8-0-download-archive?target_os=Linux&target_arch=ppc64le&Distribution=RHEL&target_version=8&target_type=rpm_local)
 
 ```bash
 # Download the installer
-wget https://developer.download.nvidia.com/compute/cuda/12.4.0/local_installers/cuda-repo-rhel8-12-4-local-12.4.0_550.54.14-1.ppc64le.rpm
+wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda-repo-rhel8-11-8-local-11.8.0_520.61.05-1.ppc64le.rpm
 
 # Install the repository
-sudo rpm -i cuda-repo-rhel8-12-4-local-12.4.0_550.54.14-1.ppc64le.rpm
+sudo rpm -i cuda-repo-rhel8-11-8-local-11.8.0_520.61.05-1.ppc64le.rpm
 
 # Clean and install CUDA
 sudo dnf clean all
-sudo dnf -y install cuda-toolkit-12-4
+sudo dnf -y install cuda-toolkit-11-8
 
 # Verify installation
 nvidia-smi
-ls -la /usr/local/cuda-12.4/lib64/libcudart.so*
+ls -la /usr/local/cuda-11.8/lib64/libcudart.so*
 ```
 
-**Note**: If you already have CUDA 11.8 installed, you can use that instead. This guide works with CUDA 11.8 or 12.x.
+**Note**: This guide is tested with CUDA 11.8. While newer CUDA versions may work, CUDA 11.8 is the verified configuration for this build.
 
 ### 2. Verify GPU Detection
 
@@ -52,7 +52,7 @@ nvidia-smi
 
 ### 3. Install GCC Toolset 11
 
-CUDA 11.8 requires GCC ≤ 11. CUDA 12.4 supports up to GCC 12, but GCC 11 is recommended for compatibility:
+CUDA 11.8 requires GCC ≤ 11:
 
 ```bash
 # Install GCC 11
@@ -113,25 +113,36 @@ export OLLAMA_DIR=$(pwd)
 ### Step 2: Setup Build Environment
 
 ```bash
-# Enable GCC 11 toolset
+# Enable GCC 11 toolset (choose one method)
+# Method 1: Using scl enable
+scl enable gcc-toolset-11 bash
+
+# Method 2: Using export (if scl not available)
 export PATH=/opt/rh/gcc-toolset-11/root/usr/bin/:$PATH
 source scl_source enable gcc-toolset-11
 
-# Add CUDA to PATH (adjust version if using CUDA 12.4)
+# Add CUDA to PATH
 export PATH=/usr/local/cuda-11.8/bin:$PATH
 export LD_LIBRARY_PATH=/usr/local/cuda-11.8/lib64:$LD_LIBRARY_PATH
-
-# For CUDA 12.4, use:
-# export PATH=/usr/local/cuda-12.4/bin:$PATH
-# export LD_LIBRARY_PATH=/usr/local/cuda-12.4/lib64:$LD_LIBRARY_PATH
 
 # Add Go to PATH
 export PATH=/usr/local/go-1.24.1/bin:$PATH
 
 # Verify all tools are accessible
 gcc --version    # Should show 11.x
-nvcc --version   # Should show CUDA version
+nvcc --version   # Should show CUDA 11.8.89
 go version       # Should show go1.24.1
+
+# Make environment persistent (optional but recommended)
+cat >> ~/.bashrc << 'EOF'
+# Ollama build environment
+export PATH=/opt/rh/gcc-toolset-11/root/usr/bin/:$PATH
+export PATH=/usr/local/cuda-11.8/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda-11.8/lib64:$LD_LIBRARY_PATH
+export PATH=/usr/local/go-1.24.1/bin:$PATH
+EOF
+
+source ~/.bashrc
 ```
 
 ### Step 3: Build Native Libraries with CMake
@@ -143,13 +154,6 @@ cmake -B build \
   -DCMAKE_CUDA_ARCHITECTURES=70 \
   -DCMAKE_C_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/gcc \
   -DCMAKE_CXX_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/g++
-
-# For CUDA 12.4, use:
-# cmake -B build \
-#   -DCMAKE_CUDA_COMPILER=/usr/local/cuda-12.4/bin/nvcc \
-#   -DCMAKE_CUDA_ARCHITECTURES=70 \
-#   -DCMAKE_C_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/gcc \
-#   -DCMAKE_CXX_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/g++
 
 # Build (this takes 10-20 minutes)
 cmake --build build -j$(nproc)
@@ -228,11 +232,8 @@ go build --tags ppc64le.power9 -o ollama .
 ### Start Ollama Server
 
 ```bash
-# Set runtime library paths (adjust CUDA version if needed)
+# Set runtime library paths
 export LD_LIBRARY_PATH=$OLLAMA_DIR/build/lib/ollama:/usr/local/cuda-11.8/lib64:$LD_LIBRARY_PATH
-
-# For CUDA 12.4:
-# export LD_LIBRARY_PATH=$OLLAMA_DIR/build/lib/ollama:/usr/local/cuda-12.4/lib64:$LD_LIBRARY_PATH
 
 # Enable all GPUs (or specify subset: 0,1 for first two)
 export CUDA_VISIBLE_DEVICES=0,1,2,3
@@ -240,6 +241,28 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 # Start server
 export OLLAMA_HOST=0.0.0.0:11434
 ./ollama serve
+```
+
+**Permanent LD_LIBRARY_PATH Setup:**
+
+To avoid setting LD_LIBRARY_PATH in every terminal:
+
+```bash
+# Add to ~/.bashrc
+echo "export LD_LIBRARY_PATH=$OLLAMA_DIR/build/lib/ollama:/usr/local/cuda-11.8/lib64:\$LD_LIBRARY_PATH" >> ~/.bashrc
+source ~/.bashrc
+```
+
+**Verify GPU is Being Used:**
+
+```bash
+# Check which libraries Ollama is linked against
+ldd ./ollama | grep cuda
+
+# Expected output should show:
+# libggml-cuda.so => /path/to/build/lib/ollama/libggml-cuda.so
+# libcudart.so.11.0 => /usr/local/cuda-11.8/lib64/libcudart.so.11.0
+# libcublas.so.11 => /usr/local/cuda-11.8/lib64/libcublas.so.11
 ```
 
 **Expected output** (confirming GPU detection):
@@ -255,6 +278,10 @@ time=... level=INFO msg="inference compute" id=GPU-3 library=cuda compute="7.0" 
 In a new terminal:
 
 ```bash
+# Set library path (if not in ~/.bashrc)
+cd /path/to/ollama-ppc64le
+export LD_LIBRARY_PATH=$(pwd)/build/lib/ollama:/usr/local/cuda-11.8/lib64:$LD_LIBRARY_PATH
+
 # Pull a model (first time only)
 ./ollama pull llama3.2:3b
 
@@ -333,6 +360,37 @@ sudo systemctl start ollama
 sudo systemctl status ollama
 ```
 
+### Firewall Configuration
+
+If you need to access Ollama from other machines:
+
+```bash
+# Open port 11434 in firewall
+sudo firewall-cmd --permanent --add-port=11434/tcp
+sudo firewall-cmd --reload
+
+# Verify port is open
+sudo firewall-cmd --list-ports
+```
+
+### SELinux Considerations
+
+If SELinux is enforcing and you encounter permission issues:
+
+```bash
+# Check SELinux status
+getenforce
+
+# If Enforcing, you may need to allow the port
+sudo semanage port -a -t http_port_t -p tcp 11434
+
+# Or temporarily set to permissive for testing
+sudo setenforce 0
+
+# To make permissive permanent (not recommended for production)
+# sudo sed -i 's/SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
+```
+
 ## Troubleshooting
 
 ### CUDA Not Detected
@@ -391,15 +449,16 @@ export PATH=/usr/local/go-1.24.1/bin:$PATH
 
 - **AC922 Specs**: 4x V100-SXM2-16GB = 64GB total GPU memory
 - **NVLink**: AC922 has NVLink 2.0 for fast multi-GPU communication
-- **Memory**: Can use both GPU memory and system RAM (507GB) for large models
-- **Recommended models**: 
+- **Recommended models**:
   - Small: llama3.2:1b, llama3.2:3b
   - Medium: llama3.1:8b, mistral:7b
   - Large: llama3.1:70b (requires multiple GPUs)
 
+**Note**: This guide focuses on GPU-only inference. CPU fallback has not been extensively tested.
+
 ## Download Links
 
-- **CUDA Toolkit**: [CUDA 12.4.0 for RHEL 8 ppc64le](https://developer.nvidia.com/cuda-12-4-0-download-archive?target_os=Linux&target_arch=ppc64le&Distribution=RHEL&target_version=8&target_type=rpm_local)
+- **CUDA Toolkit**: [CUDA 11.8.0 for RHEL 8 ppc64le](https://developer.nvidia.com/cuda-11-8-0-download-archive?target_os=Linux&target_arch=ppc64le&Distribution=RHEL&target_version=8&target_type=rpm_local)
 - **Go Language**: [Go Downloads](https://go.dev/dl/) - Select linux-ppc64le version
 - **Ollama Models**: [Ollama Model Library](https://ollama.com/library)
 
