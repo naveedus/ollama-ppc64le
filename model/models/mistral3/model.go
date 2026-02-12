@@ -11,14 +11,15 @@ import (
 	"github.com/ollama/ollama/ml/nn"
 	"github.com/ollama/ollama/model"
 	"github.com/ollama/ollama/model/input"
+	"github.com/ollama/ollama/tokenizer"
 )
 
 type Model struct {
 	model.Base
-	model.BytePairEncoding
+	tokenizer.Tokenizer
 
 	*TextModel
-	*VisionModel         `gguf:"v,vision"`
+	*VisionModel         `gguf:"v"`
 	*MultiModalProjector `gguf:"mm"`
 
 	ImageProcessor
@@ -28,13 +29,12 @@ type Model struct {
 var _ model.MultimodalProcessor = (*Model)(nil)
 
 // Implement TextProcessor interface
-var _ model.TextProcessor = (*Model)(nil)
+var _ tokenizer.Tokenizer = (*Model)(nil)
 
 func New(c fs.Config) (model.Model, error) {
 	m := &Model{
-		BytePairEncoding: model.NewBytePairEncoding(
-			c.String("tokenizer.ggml.pretokenizer", `[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]*[\p{Ll}\p{Lm}\p{Lo}\p{M}]+|[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]+[\p{Ll}\p{Lm}\p{Lo}\p{M}]*|\p{N}| ?[^\s\p{L}\p{N}]+[\r\n/]*|\s*[\r\n]+|\s+(?!\S)|\s+`),
-			&model.Vocabulary{
+		Tokenizer: tokenizer.NewBytePairEncoding(
+			&tokenizer.Vocabulary{
 				Values: c.Strings("tokenizer.ggml.tokens"),
 				Types:  c.Ints("tokenizer.ggml.token_type"),
 				Merges: c.Strings("tokenizer.ggml.merges"),
@@ -46,6 +46,7 @@ func New(c fs.Config) (model.Model, error) {
 					c.Ints("tokenizer.ggml.eos_token_ids")...,
 				),
 			},
+			`[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]*[\p{Ll}\p{Lm}\p{Lo}\p{M}]+|[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]+[\p{Ll}\p{Lm}\p{Lo}\p{M}]*|\p{N}| ?[^\s\p{L}\p{N}]+[\r\n/]*|\s*[\r\n]+|\s+(?!\S)|\s+`,
 		),
 		TextModel:           newTextModel(c),
 		VisionModel:         newVisionModel(c),
@@ -114,10 +115,7 @@ func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input
 		return nil, err
 	}
 
-	pixelValues, err := ctx.Input().FromFloatSlice(f32s, size.X, size.Y, m.ImageProcessor.numChannels)
-	if err != nil {
-		return nil, err
-	}
+	pixelValues := ctx.Input().FromFloats(f32s, size.X, size.Y, m.ImageProcessor.numChannels)
 
 	visionOutputs := m.VisionModel.Forward(ctx, pixelValues)
 	features, size := m.MultiModalProjector.Forward(ctx, visionOutputs, size)
@@ -136,22 +134,22 @@ func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input
 // [IMG]...[IMG][IMG_BREAK][IMG]...[IMG][IMG_BREAK][IMG]...[IMG][IMG_END]
 // Each sequence of [IMG]...[IMG] is a set of patches of vision embeddings
 // that can be processed together.
-func (m *Model) PostTokenize(inputs []input.Input) ([]input.Input, error) {
-	var result []input.Input
+func (m *Model) PostTokenize(inputs []*input.Input) ([]*input.Input, error) {
+	var result []*input.Input
 	for _, inp := range inputs {
 		if len(inp.Multimodal) == 0 {
 			result = append(result, inp)
 		} else {
 			for i, row := range inp.Multimodal {
 				// [IMG]
-				result = append(result, input.Input{Token: 10, Multimodal: []input.Multimodal{{Tensor: row.Tensor}}, MultimodalHash: inp.MultimodalHash, SameBatch: row.Tensor.Dim(1)})
-				result = append(result, slices.Repeat([]input.Input{{Token: 10}}, row.Tensor.Dim(1)-1)...)
+				result = append(result, &input.Input{Token: 10, Multimodal: []input.Multimodal{{Tensor: row.Tensor}}, MultimodalHash: inp.MultimodalHash, SameBatch: row.Tensor.Dim(1)})
+				result = append(result, slices.Repeat([]*input.Input{{Token: 10}}, row.Tensor.Dim(1)-1)...)
 				if i == len(inp.Multimodal)-1 {
 					// [IMG_END]
-					result = append(result, input.Input{Token: 13})
+					result = append(result, &input.Input{Token: 13})
 				} else {
 					// [IMG_BREAK]
-					result = append(result, input.Input{Token: 12})
+					result = append(result, &input.Input{Token: 12})
 				}
 			}
 		}
@@ -161,17 +159,10 @@ func (m *Model) PostTokenize(inputs []input.Input) ([]input.Input, error) {
 }
 
 func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
-	positions, err := ctx.Input().FromIntSlice(batch.Positions, len(batch.Positions))
-	if err != nil {
-		return nil, err
-	}
+	positions := ctx.Input().FromInts(batch.Positions, len(batch.Positions))
+	positionsScale := m.getScale(ctx, batch.Positions)
 
-	outputs, err := ctx.Input().FromIntSlice(batch.Outputs, len(batch.Outputs))
-	if err != nil {
-		return nil, err
-	}
-
-	return m.TextModel.Forward(ctx, batch.Inputs, positions, outputs, batch, m.Cache), nil
+	return m.TextModel.Forward(ctx, batch.Inputs, positions, positionsScale, batch.Outputs, batch, m.Cache), nil
 }
 
 func init() {

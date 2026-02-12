@@ -14,11 +14,21 @@ import (
 )
 
 type Backend interface {
+	// Close frees all memory associated with this backend
+	Close()
+
 	Load(ctx context.Context, progress func(float32)) error
+
+	// BackendMemory returns the memory allocations that were made for this model
+	BackendMemory() BackendMemory
+
 	Config() fs.Config
 	Get(name string) Tensor
 	NewContext() Context
 	NewContextSize(size int) Context
+
+	// Enumerate the devices available for inference via this backend
+	BackendDevices() []DeviceInfo
 }
 
 // BackendCacheConfig should be implemented by backends that need special output
@@ -44,28 +54,23 @@ type CacheConfig struct {
 	// MaskDType specifies the data type for generating the mask. If unset it will
 	// default to DTypeF32.
 	MaskDType DType
-
-	// MaskBatchPadding specifies the multiple for the batch size dimension in the mask.
-	// Any position that does not correspond to an actual token will be filled with -Inf.
-	MaskBatchPadding int
 }
 
 // BackendParams controls how the backend loads and executes models
 type BackendParams struct {
+	// AllocMemory causes the backend to allocate memory for the model. If
+	// false, this is only being used for discovering the required amount of
+	// memory and cannot load the model for running.
+	AllocMemory bool
+
 	// NumThreads sets the number of threads to use if running on the CPU
 	NumThreads int
 
-	// MainGPU is the index of the primary GPU to use
-	MainGPU int
-
-	// NumGPULayers is the number of layers to offload to GPUs
-	NumGPULayers int
-
-	// TensorSplit is the fraction of the model to offload to each GPU
-	TensorSplit []float32
+	// GPULayers is the set of layers to offload to GPUs
+	GPULayers GPULayersList
 
 	// FlashAttention indicates that we should use a fused flash attention kernel
-	FlashAttention bool
+	FlashAttention FlashAttentionType
 }
 
 var backends = make(map[string]func(string, BackendParams) (Backend, error))
@@ -89,20 +94,27 @@ func NewBackend(modelPath string, params BackendParams) (Backend, error) {
 type Context interface {
 	Empty(dtype DType, shape ...int) Tensor
 	Zeros(dtype DType, shape ...int) Tensor
-	FromFloatSlice(s []float32, shape ...int) (Tensor, error)
-	FromIntSlice(s []int32, shape ...int) (Tensor, error)
+	FromBytes(dtype DType, s []byte, shape ...int) Tensor
+	FromFloats(s []float32, shape ...int) Tensor
+	FromInts(s []int32, shape ...int) Tensor
 
 	// Arange creates a 1D tensor with values within an interval (start, stop] increased by step.
 	Arange(start, stop, step float32, dtype DType) Tensor
 
 	Forward(...Tensor) Context
+
+	// SetBatchSize provides a hint on the batch size to optimize processing
+	// Uses heuristics if not set
+	SetBatchSize(int)
+
 	Compute(...Tensor)
+	ComputeWithNotify(func(), ...Tensor) // notify callback once compute has begun
 
 	// Reserve is analogous to Compute but rather than executing a
 	// graph, simply preallocates memory. Typically called with a
 	// worst case graph to ensure all resources are available for
 	// for future inference.
-	Reserve() error
+	Reserve()
 
 	MaxGraphNodes() int
 	Close()
@@ -121,20 +133,27 @@ type Tensor interface {
 
 	Shape() []int
 	DType() DType
+	Cast(ctx Context, dtype DType) Tensor
 
 	Bytes() []byte
 	Floats() []float32
 
-	Neg(ctx Context) Tensor
+	FromBytes([]byte)
+	FromFloats([]float32)
+	FromInts([]int32)
+
 	Add(ctx Context, t2 Tensor) Tensor
+	Sub(ctx Context, t2 Tensor) Tensor
 	Mul(ctx Context, t2 Tensor) Tensor
 	Div(ctx Context, t2 Tensor) Tensor
 
 	Mulmat(ctx Context, t2 Tensor) Tensor
 	MulmatFullPrec(ctx Context, t2 Tensor) Tensor
 	MulmatID(ctx Context, t2, ids Tensor) Tensor
+	AddID(ctx Context, t2, ids Tensor) Tensor
 
 	Softmax(ctx Context) Tensor
+	L2Norm(ctx Context, eps float32) Tensor
 	LayerNorm(ctx Context, weight, bias Tensor, eps float32) Tensor
 	RMSNorm(ctx Context, weight Tensor, eps float32) Tensor
 	Scale(ctx Context, s float64) Tensor
@@ -142,21 +161,29 @@ type Tensor interface {
 
 	AvgPool2D(ctx Context, k, s int, p float32) Tensor
 	Conv2D(ctx Context, weight Tensor, s0, s1, p0, p1, d0, d1 int) Tensor
+	Conv3D(ctx Context, weight Tensor, c, s0, s1, s2, p0, p1, p2, d0, d1, d2 int) Tensor
+	SSMConv(ctx Context, kernel Tensor) Tensor
 
 	IM2Col(ctx Context, weight Tensor, s0, s1, p0, p1, d0, d1 int) Tensor
 
 	Sin(ctx Context) Tensor
 	Cos(ctx Context) Tensor
 	Tanh(ctx Context) Tensor
-	GELU(ctx Context) Tensor
-	SILU(ctx Context) Tensor
+	GELU(ctx Context, up ...Tensor) Tensor
+	GELU_ERF(ctx Context) Tensor
+	QuickGELU(ctx Context, up ...Tensor) Tensor
+	SILU(ctx Context, up ...Tensor) Tensor
+	RELU(ctx Context, up ...Tensor) Tensor
 	Sigmoid(ctx Context) Tensor
+	SigmoidOut(ctx Context) Tensor
+
+	// AlphaLimitSILU is a variant of SILU that clamps the input to the range [-limit, limit]
+	SILUAlphaLimit(ctx Context, up Tensor, alpha, limit float32) Tensor
 
 	Reshape(ctx Context, shape ...int) Tensor
 	View(ctx Context, offset int, shape ...int) Tensor
 	Permute(ctx Context, shape ...int) Tensor
-	Contiguous(ctx Context) Tensor
-	Set(ctx Context, t2 Tensor, offset int, strides ...int) Tensor
+	Contiguous(ctx Context, shape ...int) Tensor
 
 	Pad(ctx Context, shape ...int) Tensor
 
@@ -166,11 +193,49 @@ type Tensor interface {
 	Repeat(ctx Context, dim, n int) Tensor
 	Concat(ctx Context, t2 Tensor, dim int) Tensor
 	Rows(ctx Context, t2 Tensor) Tensor
+	SetRows(ctx Context, src Tensor, idxs Tensor) Tensor
 	Copy(ctx Context, t2 Tensor) Tensor
 	Duplicate(ctx Context) Tensor
 
+	Slice(ctx Context, dim, low, high, step int) Tensor
+	Chunk(ctx Context, dim int, size int) []Tensor
+	ChunkSections(ctx Context, dim int, sections ...int) []Tensor
+
 	TopK(ctx Context, k int) Tensor
 	Argsort(ctx Context) Tensor
+	Mean(ctx Context) Tensor
+	Variance(ctx Context) Tensor
+	Stddev(ctx Context) Tensor
+	Sqr(ctx Context) Tensor
+	Sqrt(ctx Context) Tensor
+	Exp(ctx Context) Tensor
+	Neg(ctx Context) Tensor
+
+	// Clamp clamps values to [min, max] range
+	Clamp(ctx Context, min, max float32) Tensor
+
+	// Softplus computes ln(1 + exp(x))
+	Softplus(ctx Context) Tensor
+
+	// CumSum computes cumulative sum along dimension 0
+	CumSum(ctx Context) Tensor
+
+	// Diag creates a diagonal matrix from a 1D tensor
+	Diag(ctx Context) Tensor
+
+	// Tri converts a matrix to triangular form (0=upper+diag, 1=upper, 2=lower+diag, 3=lower)
+	Tri(ctx Context, triType int) Tensor
+
+	// Fill fills a tensor with a constant value (in-place)
+	Fill(ctx Context, value float32) Tensor
+
+	// Repeat4D repeats tensor to match target shape
+	Repeat4D(ctx Context, dim0, dim1, dim2, dim3 int) Tensor
+
+	// SolveTri solves a triangular system Ax = B
+	SolveTri(ctx Context, b Tensor, lower, left, unitDiag bool) Tensor
+
+	Interpolate(ctx Context, dims [4]int, samplingMode SamplingMode) Tensor
 }
 
 // ScaledDotProductAttention implements a fused attention
@@ -193,8 +258,10 @@ type Tensor interface {
 //
 // kqv := value.Mulmat(ctx, kq)
 // return kqv.Permute(ctx, 0, 2, 1, 3).Contiguous(ctx)
+//
+// cacheConfigApplied indicates whether the optimizations requested through CacheConfig have been performed
 type ScaledDotProductAttention interface {
-	ScaledDotProductAttention(ctx Context, key, value, mask Tensor, scale float64) Tensor
+	ScaledDotProductAttention(ctx Context, key, value, mask, sinks Tensor, vmla Tensor, scale float64, cacheConfigApplied bool) Tensor
 }
 
 type number interface {
@@ -334,4 +401,12 @@ const (
 	DTypeQ80
 	DTypeQ40
 	DTypeI32
+	DTypeMXFP4
+)
+
+type SamplingMode int
+
+const (
+	SamplingModeNearest SamplingMode = iota
+	SamplingModeBilinear
 )
