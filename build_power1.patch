@@ -1,0 +1,213 @@
+From 4115e4f58f8c3fb86cdce2d58aae811c2d26cc52 Mon Sep 17 00:00:00 2001
+From: Shalini Salomi Bodapati <Shalini.Salomi.Bodapati@ibm.com>
+Date: Fri, 16 Jan 2026 06:08:20 -0600
+Subject: [PATCH] ggml: Fix PowerPC build and enable MMA optimizations
+
+This change resolves PowerPC build breakage and enables Matrix Math
+Accelerator (MMA) optimizations on supported hardware.
+
+Key changes:
+- Apply required upstream ggml fixes for PowerPC builds, including:
+  - vector macro collision fixes
+  - conditional POWER11 backend enablement
+- Enable Matrix Math Accelerator (MMA) support for Power10.
+- Add architecture-specific compiler flags to enable optimized code paths:
+  - `-mcpu=power10` when built with the `ppc64le.power10` build tag
+    (enables MMA-based kernels, including llamafile_sgemm)
+  - `-mcpu=power9` when built with the `ppc64le.power9` build tag
+    (enables VSX optimizations)
+
+Build instructions:
+- Power10:
+    go build --tags ppc64le.power10 .
+- Power9:
+    go build --tags ppc64le.power9 .
+
+Performance impact:
+- ~30% inference time reduction on Power10 with MMA enabled.
+- Measured using:
+    ollama run llama3:8b (Q4_0)
+    ~50-word summarization, 512-token prompt
+  - With MMA: ~6.05s
+  - Without MMA: ~8.45s
+
+Improves performance for Q4_0, Q8_0, FP32, and BF16 models on Power10.
+---
+ ...-fix-vector-macro-collision-on-Power.patch | 44 +++++++++++++++++++
+ ...ly-enable-POWER11-CPU-backend-based-.patch | 36 +++++++++++++++
+ ml/backend/ggml/ggml/src/CMakeLists.txt       |  9 +++-
+ .../llamafile/llamafile_ppc64le_power10.go    |  7 +++
+ .../llamafile/llamafile_ppc64le_power9.go     |  7 +++
+ .../ggml/src/ggml-cpu/llamafile/sgemm.cpp     |  3 ++
+ .../ggml/ggml/src/ggml-cpu/simd-mappings.h    |  2 +-
+ 7 files changed, 106 insertions(+), 2 deletions(-)
+ create mode 100644 llama/patches/0032-ggml-fix-vector-macro-collision-on-Power.patch
+ create mode 100644 llama/patches/0033-ggml-conditionally-enable-POWER11-CPU-backend-based-.patch
+ create mode 100644 ml/backend/ggml/ggml/src/ggml-cpu/llamafile/llamafile_ppc64le_power10.go
+ create mode 100644 ml/backend/ggml/ggml/src/ggml-cpu/llamafile/llamafile_ppc64le_power9.go
+
+diff --git a/llama/patches/0032-ggml-fix-vector-macro-collision-on-Power.patch b/llama/patches/0032-ggml-fix-vector-macro-collision-on-Power.patch
+new file mode 100644
+index 00000000000..a926d9a8629
+--- /dev/null
++++ b/llama/patches/0032-ggml-fix-vector-macro-collision-on-Power.patch
+@@ -0,0 +1,44 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: Shalini Salomi Bodapati <Shalini.Salomi.Bodapati@ibm.com>
++Date: Mon, 22 Dec 2025 01:57:01 -0600
++Subject: [PATCH] ggml: fix vector macro collision on Power
++
++When compiling with MMA enabled, 'vector' may conflict with
++compiler headers or language keywords on Power platforms.
++
++Map 'vector' to '__vector' to avoid macro collisions and
++restore successful compilation.
++
++Signed-off-by: Shalini Salomi Bodapati <Shalini.Salomi.Bodapati@ibm.com>
++---
++ ggml/src/ggml-cpu/llamafile/sgemm.cpp | 3 +++
++ ggml/src/ggml-cpu/simd-mappings.h     | 2 +-
++ 2 files changed, 4 insertions(+), 1 deletion(-)
++
++diff --git a/ggml/src/ggml-cpu/llamafile/sgemm.cpp b/ggml/src/ggml-cpu/llamafile/sgemm.cpp
++index a0cce10aa..f1331de21 100644
++--- a/ggml/src/ggml-cpu/llamafile/sgemm.cpp
+++++ b/ggml/src/ggml-cpu/llamafile/sgemm.cpp
++@@ -117,6 +117,9 @@ inline float32x4_t mul(float32x4_t x, float32x4_t y) { return vec_mul(x, y); }
++ #endif
++ 
++ #if defined(__MMA__)
+++#ifndef vector
+++#define vector __vector
+++#endif
++ #include "sgemm-ppc.h"
++ #endif
++ ////////////////////////////////////////////////////////////////////////////////////////////////////
++diff --git a/ggml/src/ggml-cpu/simd-mappings.h b/ggml/src/ggml-cpu/simd-mappings.h
++index 101a9c086..6f742d2d6 100644
++--- a/ggml/src/ggml-cpu/simd-mappings.h
+++++ b/ggml/src/ggml-cpu/simd-mappings.h
++@@ -631,7 +631,7 @@ static inline void __avx_f32cx8_store(ggml_fp16_t *x, __m256 y) {
++ #define GGML_F32_STEP 32
++ #define GGML_F32_EPR  4
++ 
++-#define GGML_F32x4              vector float
+++#define GGML_F32x4              __vector float
++ #define GGML_F32x4_ZERO         {0.0f}
++ #define GGML_F32x4_SET1         vec_splats
++ #define GGML_F32x4_LOAD(p)      vec_xl(0, p)
+diff --git a/llama/patches/0033-ggml-conditionally-enable-POWER11-CPU-backend-based-.patch b/llama/patches/0033-ggml-conditionally-enable-POWER11-CPU-backend-based-.patch
+new file mode 100644
+index 00000000000..e92a23731cd
+--- /dev/null
++++ b/llama/patches/0033-ggml-conditionally-enable-POWER11-CPU-backend-based-.patch
+@@ -0,0 +1,36 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: Shalini Salomi Bodapati <Shalini.Salomi.Bodapati@ibm.com>
++Date: Mon, 22 Dec 2025 01:58:58 -0600
++Subject: [PATCH] ggml: conditionally enable POWER11 CPU backend based on
++ compiler support
++
++Guard POWER11 backend creation behind a compiler flag check for
++-mcpu=power11. This avoids build failures on current GCC/Clang
++toolchains while preserving forward compatibility once POWER11
++support becomes available.
++
++Signed-off-by: Shalini Salomi Bodapati <Shalini.Salomi.Bodapati@ibm.com>
++---
++ ggml/src/CMakeLists.txt | 9 ++++++++-
++ 1 file changed, 8 insertions(+), 1 deletion(-)
++
++diff --git a/ggml/src/CMakeLists.txt b/ggml/src/CMakeLists.txt
++index 9a134b7af..ce2208201 100644
++--- a/ggml/src/CMakeLists.txt
+++++ b/ggml/src/CMakeLists.txt
++@@ -403,7 +403,14 @@ if (GGML_CPU_ALL_VARIANTS)
++             ggml_add_cpu_backend_variant(power8_2       POWER8  VSX)
++             ggml_add_cpu_backend_variant(power9         POWER9  VSX)
++             ggml_add_cpu_backend_variant(power10        POWER10 VSX)
++-            ggml_add_cpu_backend_variant(power11        POWER11 VSX)
+++            # POWER11 backend: only if compiler supports -mcpu=power11
+++            check_cxx_compiler_flag("-mcpu=power11" GGML_CXX_SUPPORTS_POWER11)
+++            if (GGML_CXX_SUPPORTS_POWER11)
+++                message(STATUS "Compiler supports -mcpu=power11, enabling POWER11 backend")
+++                ggml_add_cpu_backend_variant(power11 POWER11 VSX)
+++            else()
+++                message(STATUS "Skipping POWER11 backend: compiler does not support -mcpu=power11")
+++            endif()
++         else()
++             message(FATAL_ERROR "Unsupported PowerPC target OS: ${CMAKE_SYSTEM_NAME}")
++         endif()
+diff --git a/ml/backend/ggml/ggml/src/CMakeLists.txt b/ml/backend/ggml/ggml/src/CMakeLists.txt
+index 9a134b7af28..3c3be74f8b8 100644
+--- a/ml/backend/ggml/ggml/src/CMakeLists.txt
++++ b/ml/backend/ggml/ggml/src/CMakeLists.txt
+@@ -403,7 +403,14 @@ if (GGML_CPU_ALL_VARIANTS)
+             ggml_add_cpu_backend_variant(power8_2       POWER8  VSX)
+             ggml_add_cpu_backend_variant(power9         POWER9  VSX)
+             ggml_add_cpu_backend_variant(power10        POWER10 VSX)
+-            ggml_add_cpu_backend_variant(power11        POWER11 VSX)
++            # POWER11 backend: only if compiler supports -mcpu=power11
++            check_cxx_compiler_flag("-mcpu=power11" GGML_CXX_SUPPORTS_POWER11)
++            if (GGML_CXX_SUPPORTS_POWER11)
++                message(STATUS "Compiler supports -mcpu=power11, enabling POWER11 backend")
++                ggml_add_cpu_backend_variant(power11 POWER11 VSX)
++            else()
++                message(STATUS "Skipping POWER11 backend: compiler does not support -mcpu=power11")
++            endif()
+         else()
+             message(FATAL_ERROR "Unsupported PowerPC target OS: ${CMAKE_SYSTEM_NAME}")
+         endif()
+diff --git a/ml/backend/ggml/ggml/src/ggml-cpu/llamafile/llamafile_ppc64le_power10.go b/ml/backend/ggml/ggml/src/ggml-cpu/llamafile/llamafile_ppc64le_power10.go
+new file mode 100644
+index 00000000000..0aaec68b2ba
+--- /dev/null
++++ b/ml/backend/ggml/ggml/src/ggml-cpu/llamafile/llamafile_ppc64le_power10.go
+@@ -0,0 +1,7 @@
++// +build ppc64le.power10
++
++package llamafile
++
++// #cgo CXXFLAGS: -std=c++17 -mcpu=power10
++// #cgo CPPFLAGS: -I${SRCDIR}/.. -I${SRCDIR}/../.. -I${SRCDIR}/../../../include
++import "C"
+diff --git a/ml/backend/ggml/ggml/src/ggml-cpu/llamafile/llamafile_ppc64le_power9.go b/ml/backend/ggml/ggml/src/ggml-cpu/llamafile/llamafile_ppc64le_power9.go
+new file mode 100644
+index 00000000000..6bdd6978052
+--- /dev/null
++++ b/ml/backend/ggml/ggml/src/ggml-cpu/llamafile/llamafile_ppc64le_power9.go
+@@ -0,0 +1,7 @@
++// +build ppc64le.power9
++
++package llamafile
++
++// #cgo CXXFLAGS: -std=c++17 -mcpu=power9
++// #cgo CPPFLAGS: -I${SRCDIR}/.. -I${SRCDIR}/../.. -I${SRCDIR}/../../../include
++import "C"
+diff --git a/ml/backend/ggml/ggml/src/ggml-cpu/llamafile/sgemm.cpp b/ml/backend/ggml/ggml/src/ggml-cpu/llamafile/sgemm.cpp
+index a0cce10aa7c..f1331de213c 100644
+--- a/ml/backend/ggml/ggml/src/ggml-cpu/llamafile/sgemm.cpp
++++ b/ml/backend/ggml/ggml/src/ggml-cpu/llamafile/sgemm.cpp
+@@ -117,6 +117,9 @@ inline float32x4_t mul(float32x4_t x, float32x4_t y) { return vec_mul(x, y); }
+ #endif
+ 
+ #if defined(__MMA__)
++#ifndef vector
++#define vector __vector
++#endif
+ #include "sgemm-ppc.h"
+ #endif
+ ////////////////////////////////////////////////////////////////////////////////////////////////////
+diff --git a/ml/backend/ggml/ggml/src/ggml-cpu/simd-mappings.h b/ml/backend/ggml/ggml/src/ggml-cpu/simd-mappings.h
+index 101a9c086b2..6f742d2d6e3 100644
+--- a/ml/backend/ggml/ggml/src/ggml-cpu/simd-mappings.h
++++ b/ml/backend/ggml/ggml/src/ggml-cpu/simd-mappings.h
+@@ -631,7 +631,7 @@ static inline void __avx_f32cx8_store(ggml_fp16_t *x, __m256 y) {
+ #define GGML_F32_STEP 32
+ #define GGML_F32_EPR  4
+ 
+-#define GGML_F32x4              vector float
++#define GGML_F32x4              __vector float
+ #define GGML_F32x4_ZERO         {0.0f}
+ #define GGML_F32x4_SET1         vec_splats
+ #define GGML_F32x4_LOAD(p)      vec_xl(0, p)
