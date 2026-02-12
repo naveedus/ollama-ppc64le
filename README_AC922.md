@@ -220,7 +220,7 @@ go build --tags ppc64le.power9 -o ollama .
 
 # Check version
 ./ollama --version
-# Now shows: ollama version is 0.5.0-ac922-20260212
+# Now shows: ollama version is 0.15.6-ac922-20260212
 ```
 
 ## Running Ollama
