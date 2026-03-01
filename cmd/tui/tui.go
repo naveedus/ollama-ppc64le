@@ -131,7 +131,7 @@ type model struct {
 	signInURL       string
 	signInModel     string
 	signInSpinner   int
-	signInFromModal bool   // true if sign-in was triggered from modal (not main menu)
+	signInFromModal bool // true if sign-in was triggered from modal (not main menu)
 
 	width     int    // terminal width from WindowSizeMsg
 	statusMsg string // temporary status message shown near help text
@@ -209,7 +209,26 @@ func (m *model) openMultiModelModal(integration string) {
 }
 
 func isCloudModel(name string) bool {
-	return strings.HasSuffix(name, ":cloud")
+	return strings.HasSuffix(name, ":cloud") || strings.HasSuffix(name, "-cloud")
+}
+
+func cloudStatusDisabled(client *api.Client) bool {
+	status, err := client.CloudStatusExperimental(context.Background())
+	if err != nil {
+		return false
+	}
+	return status.Cloud.Disabled
+}
+
+func cloudModelDisabled(name string) bool {
+	if !isCloudModel(name) {
+		return false
+	}
+	client, err := api.ClientFromEnvironment()
+	if err != nil {
+		return false
+	}
+	return cloudStatusDisabled(client)
 }
 
 // checkCloudSignIn checks if a cloud model needs sign-in.
@@ -220,6 +239,9 @@ func (m *model) checkCloudSignIn(modelName string, fromModal bool) tea.Cmd {
 	}
 	client, err := api.ClientFromEnvironment()
 	if err != nil {
+		return nil
+	}
+	if cloudStatusDisabled(client) {
 		return nil
 	}
 	user, err := client.Whoami(context.Background())
@@ -272,7 +294,11 @@ func (m *model) loadAvailableModels() {
 	if err != nil {
 		return
 	}
+	cloudDisabled := cloudStatusDisabled(client)
 	for _, mdl := range models.Models {
+		if cloudDisabled && mdl.RemoteModel != "" {
+			continue
+		}
 		m.availableModels[mdl.Name] = true
 	}
 }
@@ -403,8 +429,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if m.multiModalSelector.confirmed {
 				var selected []string
-				for _, idx := range m.multiModalSelector.checkOrder {
-					selected = append(selected, m.multiModalSelector.items[idx].Name)
+				if m.multiModalSelector.singleAdd != "" {
+					// Single-add mode: prepend picked model, keep existing deduped
+					selected = []string{m.multiModalSelector.singleAdd}
+					for _, name := range config.IntegrationModels(m.items[m.cursor].integration) {
+						if name != m.multiModalSelector.singleAdd {
+							selected = append(selected, name)
+						}
+					}
+				} else {
+					// Last checked is default (first in result)
+					co := m.multiModalSelector.checkOrder
+					last := co[len(co)-1]
+					selected = []string{m.multiModalSelector.items[last].Name}
+					for _, idx := range co {
+						if idx != last {
+							selected = append(selected, m.multiModalSelector.items[idx].Name)
+						}
+					}
 				}
 				if len(selected) > 0 {
 					m.changeModels = selected
@@ -482,7 +524,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter", " ":
 			item := m.items[m.cursor]
 
-			if item.integration != "" && !config.IsIntegrationInstalled(item.integration) {
+			if item.integration != "" && !config.IsIntegrationInstalled(item.integration) && !config.AutoInstallable(item.integration) {
 				return m, nil
 			}
 
@@ -496,6 +538,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd
 			}
 
+			if configuredModel != "" && isCloudModel(configuredModel) && cloudModelDisabled(configuredModel) {
+				if item.integration != "" && config.IsEditorIntegration(item.integration) {
+					m.openMultiModelModal(item.integration)
+				} else {
+					m.openModelModal(configuredModel)
+				}
+				return m, nil
+			}
+
 			m.selected = true
 			m.quitting = true
 			return m, tea.Quit
@@ -504,6 +555,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			item := m.items[m.cursor]
 			if item.integration != "" || item.isRunModel {
 				if item.integration != "" && !config.IsIntegrationInstalled(item.integration) {
+					if config.AutoInstallable(item.integration) {
+						// Auto-installable: select to trigger install flow
+						m.selected = true
+						m.quitting = true
+						return m, tea.Quit
+					}
 					return m, nil
 				}
 				if item.integration != "" && config.IsEditorIntegration(item.integration) {
@@ -567,7 +624,11 @@ func (m model) View() string {
 		var modelSuffix string
 		if item.integration != "" {
 			if !isInstalled {
-				title += " " + notInstalledStyle.Render("(not installed)")
+				if config.AutoInstallable(item.integration) {
+					title += " " + notInstalledStyle.Render("(install)")
+				} else {
+					title += " " + notInstalledStyle.Render("(not installed)")
+				}
 			} else if m.cursor == i {
 				if mdl := config.IntegrationModel(item.integration); mdl != "" && m.modelExists(mdl) {
 					modelSuffix = " " + modelStyle.Render("("+mdl+")")
@@ -583,7 +644,9 @@ func (m model) View() string {
 
 		desc := item.description
 		if !isInstalled && item.integration != "" && m.cursor == i {
-			if hint := config.IntegrationInstallHint(item.integration); hint != "" {
+			if config.AutoInstallable(item.integration) {
+				desc = "Press enter to install"
+			} else if hint := config.IntegrationInstallHint(item.integration); hint != "" {
 				desc = hint
 			} else {
 				desc = "not installed"
