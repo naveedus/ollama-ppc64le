@@ -215,9 +215,11 @@ git log --oneline | head -5
 If you want a proper version number:
 
 ```bash
-# Create version file
-mkdir -p version
-echo "0.15.6-ac922-$(date +%Y%m%d)" > version/version.txt
+# edit version/version.go file with the version number
+vi version/version.go 
+package version
+
+var Version string = "0.17.4"
 
 # Rebuild
 go build --tags ppc64le.power9 -o ollama .
